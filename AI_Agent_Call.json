@@ -1,0 +1,194 @@
+{
+  "name": "AI Agent Call",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -340,
+        -40
+      ],
+      "id": "f4596e83-0837-4003-bed6-1b36e28a1c44",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1vOfTLk14C0G9Dz1rTTJIpEe1XB9eDRRv65fnYVQrLWw",
+          "mode": "list",
+          "cachedResultName": "AI Cold Call Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vOfTLk14C0G9Dz1rTTJIpEe1XB9eDRRv65fnYVQrLWw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2124101241,
+          "mode": "list",
+          "cachedResultName": "Clients",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vOfTLk14C0G9Dz1rTTJIpEe1XB9eDRRv65fnYVQrLWw/edit#gid=2124101241"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "not_called"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -120,
+        -40
+      ],
+      "id": "def51aac-5101-4162-916f-8079d88c2164",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "pxXeTM5E4AIOW1ci",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer c6169516-4c16-4ef2-90d5-517d2ac83f02"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assistantId\": \"c929eaa5-cdec-421d-999e-639514f54780\",\n  \"phoneNumberId\": \"24ec8633-7422-4e0e-a953-88cc9dac8a13\",\n  \"customer\": {\n    \"numberE164CheckEnabled\": false,\n    \"number\": \"{{ $json['Phone Number'] }}\",\n    \"name\": \"{{ $json.Company }}\"\n  },\n  \"metadata\": {\n    \"clientFirstName\": \"{{ $json['First Name'] }}\",\n    \"clientLastName\": \"{{ $json['Last Name'] }}\",\n    \"clientCompany\": \"{{ $json.Company }}\",\n    \"clientEmail\": \"{{ $json.Email }}\",\n    \"companyInfo\": \"{{ $json['Company Info'] }}\",\n    \"rowId\": \"{{ $json.rowId }}\",\n    \"currentTime\": \"{{ $now.format('YYYY-MM-DD HH:mm:ss') }}\",\n    \"currentDate\": \"{{ $now.format('MMMM D, YYYY') }}\",\n    \"currentDay\": \"{{ $now.format('dddd') }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        -40
+      ],
+      "id": "88467037-f879-4bbe-a3c8-29d83640b84e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "call-completed-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        140
+      ],
+      "id": "e2e1a0de-5393-49d7-8e56-ad45b6acbfb9",
+      "name": "Call Completed Webhook",
+      "webhookId": "call-completed-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1vOfTLk14C0G9Dz1rTTJIpEe1XB9eDRRv65fnYVQrLWw",
+          "mode": "list",
+          "cachedResultName": "AI Cold Call Agent"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2124101241,
+          "mode": "list",
+          "cachedResultName": "Clients"
+        },
+        "columns": {
+          "value": {
+            "status": "={{ $json.body?.analysis?.callSummary?.status || 'called' }}",
+            "Notes": "={{ $json.body?.analysis?.callSummary?.notes || $json.body?.transcript || 'Call completed' }}",
+            "Preferred Date": "={{ $json.body?.analysis?.callSummary?.preferredDate || '' }}",
+            "Preferred Time": "={{ $json.body?.analysis?.callSummary?.preferredTime || '' }}"
+          },
+          "updateAllColumns": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        500,
+        140
+      ],
+      "id": "8b21b640-f40a-4da0-974e-50727bf9dcf4",
+      "name": "Update Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "pxXeTM5E4AIOW1ci",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Completed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ba549d89-7c81-4883-a126-6a57927eee05",
+  "meta": {
+    "instanceId": "5dd9cd5f2c79e3f7e8711ca2cfee4016974e2eb710f358eeef72a0078e3694cc"
+  },
+  "id": "7OFDJXcPmyQKDnok",
+  "tags": []
+}
